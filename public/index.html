@@ -295,11 +295,15 @@
     <div class="sidebar">
       <h3>Agents</h3>
       <div id="agentsList"></div>
-      
+
       <h3 style="margin-top: 1.5rem;">⚙️ Settings</h3>
       <button id="settingsBtn" style="width: 100%; padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem;">Open Settings Panel</button>
       
+      <h3 style="margin-top: 1.5rem;">🤖 Outsider Assistant</h3>
+      <button id="outsiderBtn" style="width: 100%; padding: 0.5rem; background: #9c27b0; border: none; color: white; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem;">Ask System Questions</button>
+
       <h3 style="margin-top: 1.5rem;">🛠️ Admin</h3>
+      <button id="healthBtn" style="width: 100%; padding: 0.5rem; background: #2196f3; border: none; color: white; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem;">System Health</button>
       <button id="resetBtn" style="width: 100%; padding: 0.5rem; background: #c62828; border: none; color: white; border-radius: 6px; cursor: pointer;">Reset World</button>
     </div>
 
@@ -403,6 +407,60 @@
           <button type="button" id="deleteAgentBtn" style="flex: 1; padding: 0.75rem; background: #c62828; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer;">Delete</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Outsider Assistant Modal -->
+  <div id="outsiderModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 2rem; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem;">🤖 Outsider Assistant</h2>
+        <button id="closeOutsiderBtn" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">Ask me anything about the system configuration, troubleshooting, or how things work!</p>
+      
+      <div style="margin-bottom: 1rem;">
+        <textarea id="outsiderQuestion" rows="3" placeholder="e.g., Why are agents not responding? How do I change the chaos level? What's the current system status?" style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; resize: vertical;"></textarea>
+      </div>
+      
+      <button id="askOutsiderBtn" style="width: 100%; padding: 0.75rem; background: #9c27b0; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-bottom: 1rem;">Ask Question</button>
+      
+      <div id="outsiderResponse" style="background: var(--bg-primary); border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; display: none;">
+        <div id="outsiderResponseContent" style="white-space: pre-wrap; line-height: 1.6;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Health Modal -->
+  <div id="healthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem;">🛠️ System Health</h2>
+        <button id="closeHealthBtn" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      
+      <div id="healthContent" style="margin-bottom: 1rem;">
+        <p style="color: var(--text-secondary);">Loading health status...</p>
+      </div>
+      
+      <button id="refreshHealthBtn" style="width: 100%; padding: 0.75rem; background: #2196f3; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer;">Refresh Status</button>
+    </div>
+  </div>
+
+  <!-- Reset Modal -->
+  <div id="resetModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem;">⚠️ Reset System</h2>
+        <button id="closeResetBtn" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">What would you like to reset?</p>
+      
+      <button id="resetMemoriesBtn" style="width: 100%; padding: 0.75rem; background: #ff9800; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-bottom: 0.5rem;">Reset Agent Memories</button>
+      <button id="resetConfigBtn" style="width: 100%; padding: 0.75rem; background: #ff5722; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-bottom: 0.5rem;">Reset Configuration</button>
+      <button id="resetAllBtn" style="width: 100%; padding: 0.75rem; background: #c62828; border: none; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer;">Full System Reset</button>
     </div>
   </div>
 
@@ -578,6 +636,264 @@
     
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendMessage();
+    });
+
+    // Modal controls
+    const settingsModal = document.getElementById('settingsModal');
+    const agentModal = document.getElementById('agentModal');
+    const outsiderModal = document.getElementById('outsiderModal');
+    const healthModal = document.getElementById('healthModal');
+    const resetModal = document.getElementById('resetModal');
+
+    // Settings modal
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'flex';
+      loadCurrentSettings();
+    });
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+    });
+
+    // Outsider Assistant modal
+    document.getElementById('outsiderBtn').addEventListener('click', () => {
+      outsiderModal.style.display = 'flex';
+    });
+    document.getElementById('closeOutsiderBtn').addEventListener('click', () => {
+      outsiderModal.style.display = 'none';
+    });
+    document.getElementById('askOutsiderBtn').addEventListener('click', askOutsiderAssistant);
+    document.getElementById('outsiderQuestion').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        askOutsiderAssistant();
+      }
+    });
+
+    // Health modal
+    document.getElementById('healthBtn').addEventListener('click', () => {
+      healthModal.style.display = 'flex';
+      loadSystemHealth();
+    });
+    document.getElementById('closeHealthBtn').addEventListener('click', () => {
+      healthModal.style.display = 'none';
+    });
+    document.getElementById('refreshHealthBtn').addEventListener('click', loadSystemHealth);
+
+    // Reset modal
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      resetModal.style.display = 'flex';
+    });
+    document.getElementById('closeResetBtn').addEventListener('click', () => {
+      resetModal.style.display = 'none';
+    });
+    document.getElementById('resetMemoriesBtn').addEventListener('click', () => performReset('memories'));
+    document.getElementById('resetConfigBtn').addEventListener('click', () => performReset('config'));
+    document.getElementById('resetAllBtn').addEventListener('click', () => performReset('all'));
+
+    // Close modals on outside click
+    [settingsModal, agentModal, outsiderModal, healthModal, resetModal].forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    });
+
+    // Ask Outsider Assistant
+    async function askOutsiderAssistant() {
+      const question = document.getElementById('outsiderQuestion').value.trim();
+      if (!question) return;
+
+      const askBtn = document.getElementById('askOutsiderBtn');
+      askBtn.disabled = true;
+      askBtn.textContent = 'Asking...';
+
+      try {
+        const res = await fetch('/api/outsider-assistant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        
+        const responseDiv = document.getElementById('outsiderResponse');
+        const responseContent = document.getElementById('outsiderResponseContent');
+        responseDiv.style.display = 'block';
+        responseContent.textContent = data.answer || 'No response generated';
+      } catch (error) {
+        console.error('Failed to ask outsider assistant:', error);
+        alert('Failed to get response from Outsider Assistant');
+      } finally {
+        askBtn.disabled = false;
+        askBtn.textContent = 'Ask Question';
+      }
+    }
+
+    // Load system health
+    async function loadSystemHealth() {
+      const content = document.getElementById('healthContent');
+      content.innerHTML = '<p style="color: var(--text-secondary);">Loading...</p>';
+
+      try {
+        const res = await fetch('/api/system-health');
+        const health = await res.json();
+
+        const statusColor = health.status === 'healthy' ? '#4caf50' : '#ff9800';
+        let html = `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 1.2rem; font-weight: bold; color: ${statusColor};">Status: ${health.status.toUpperCase()}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary);">Uptime</div>
+              <div style="font-size: 1.1rem;">${(health.uptime / 60).toFixed(2)} min</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary);">Agents</div>
+              <div style="font-size: 1.1rem;">${health.agentsActive}/${health.agentsCount} active</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary);">Memory Used</div>
+              <div style="font-size: 1.1rem;">${(health.memoryUsage.heapUsed / 1024 / 1024).toFixed(1)} MB</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary);">Config Valid</div>
+              <div style="font-size: 1.1rem; color: ${health.configValid ? '#4caf50' : '#f44336'};">${health.configValid ? 'Yes' : 'No'}</div>
+            </div>
+          </div>
+        `;
+
+        if (health.issues && health.issues.length > 0) {
+          html += `
+            <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+              <div style="font-weight: bold; color: #ff9800; margin-bottom: 0.5rem;">⚠️ Issues Detected:</div>
+              <ul style="margin: 0; padding-left: 1.5rem; color: var(--text-secondary);">
+                ${health.issues.map(issue => `<li>${issue}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+
+        if (health.lastLogs && health.lastLogs.length > 0) {
+          html += `
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px;">
+              <div style="font-weight: bold; margin-bottom: 0.5rem;">Recent Logs:</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); max-height: 150px; overflow-y: auto;">
+                ${health.lastLogs.map(log => `<div style="margin-bottom: 0.25rem;">${escapeHtml(log)}</div>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        content.innerHTML = html;
+      } catch (error) {
+        console.error('Failed to load health:', error);
+        content.innerHTML = '<p style="color: #f44336;">Failed to load health status</p>';
+      }
+    }
+
+    // Perform system reset
+    async function performReset(resetType) {
+      if (!confirm(`Are you sure you want to reset ${resetType}? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/system-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resetType })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(data.message);
+          resetModal.style.display = 'none';
+          if (resetType !== 'memories') {
+            location.reload();
+          }
+        } else {
+          alert('Reset failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Reset failed:', error);
+        alert('Reset failed: ' + error.message);
+      }
+    }
+
+    // Load current settings for the settings modal
+    async function loadCurrentSettings() {
+      try {
+        const res = await fetch('/api/config');
+        const config = await res.json();
+        
+        if (config.chaosSettings) {
+          document.getElementById('chaosSlider').value = config.chaosSettings.baseTemperature / 2 || 0.5;
+          document.getElementById('chaosValue').textContent = (config.chaosSettings.baseTemperature / 2 || 0.5).toFixed(2);
+        }
+        if (config.toolSettings) {
+          document.getElementById('toolUseCheckbox').checked = config.toolSettings.enabled !== false;
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    }
+
+    // Save settings
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      const chaosLevel = parseFloat(document.getElementById('chaosSlider').value);
+      const temp = parseFloat(document.getElementById('tempSlider').value);
+      const interval = parseInt(document.getElementById('intervalInput').value);
+      const allowTools = document.getElementById('toolUseCheckbox').checked;
+
+      try {
+        await fetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chaosSettings: {
+              baseTemperature: temp,
+              behaviorProbabilities: {
+                replyUser: 0.40 - chaosLevel * 0.2,
+                replyAgent: 0.25 - chaosLevel * 0.1,
+                interrupt: 0.10 + chaosLevel * 0.2,
+                newTopic: 0.10 + chaosLevel * 0.1,
+                silent: 0.10,
+                abnormal: 0.05 + chaosLevel * 0.1
+              },
+              emotionDriftRate: 0.1 + chaosLevel * 0.2,
+              personalityMutations: 0.02 + chaosLevel * 0.03
+            },
+            toolSettings: {
+              enabled: allowTools,
+              maxToolCallsPerTurn: 3,
+              timeout: 5000
+            }
+          })
+        });
+        alert('Settings saved!');
+        settingsModal.style.display = 'none';
+      } catch (error) {
+        console.error('Failed to save settings:', error);
+        alert('Failed to save settings');
+      }
+    });
+
+    // Chaos slider update
+    document.getElementById('chaosSlider').addEventListener('input', (e) => {
+      document.getElementById('chaosValue').textContent = e.target.value;
+    });
+
+    // Temperature slider update
+    document.getElementById('tempSlider').addEventListener('input', (e) => {
+      document.getElementById('tempValue').textContent = e.target.value;
+    });
+
+    // Agent modal close buttons
+    document.querySelectorAll('.closeAgentBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        agentModal.style.display = 'none';
+      });
     });
 
     // Load initial agents
