@@ -20,7 +20,13 @@ const config = {
   dbPath: process.env.DB_PATH || './data/chat.db',
   agents: agentConfig.agents,
   chaosSettings: agentConfig.chaosSettings,
-  toolSettings: agentConfig.toolSettings
+  toolSettings: agentConfig.toolSettings,
+  // System settings for web management
+  systemSettings: {
+    allowWebConfig: true,
+    adminPassword: '',
+    outsiderAssistantEnabled: true
+  }
 };
 
 // Initialize app
@@ -49,7 +55,8 @@ app.get('/api/config', (req, res) => {
     defaultModel: config.defaultModel,
     chaosSettings: config.chaosSettings,
     toolSettings: config.toolSettings,
-    agents: config.agents
+    agents: config.agents,
+    systemSettings: config.systemSettings
   });
 });
 
@@ -72,6 +79,9 @@ app.put('/api/config', (req, res) => {
   if (updates.agents) {
     config.agents = updates.agents;
   }
+  if (updates.systemSettings) {
+    config.systemSettings = { ...config.systemSettings, ...updates.systemSettings };
+  }
   
   console.log('⚙️ Config updated:', JSON.stringify(updates, null, 2));
   broadcastSystemState();
@@ -80,7 +90,8 @@ app.put('/api/config', (req, res) => {
     defaultModel: config.defaultModel,
     chaosSettings: config.chaosSettings,
     toolSettings: config.toolSettings,
-    agents: config.agents
+    agents: config.agents,
+    systemSettings: config.systemSettings
   }});
 });
 
@@ -173,6 +184,168 @@ app.post('/api/trigger/:agentId', (req, res) => {
 app.get('/api/test-connection', async (req, res) => {
   const connected = await chatWorld.testConnection();
   res.json({ connected, endpoint: config.apiEndpoint, model: config.defaultModel });
+});
+
+// ==========================================
+// 🤖 Outsider Assistant API (局外人助手)
+// ==========================================
+
+// Outsider assistant - can answer system questions and help with troubleshooting
+app.post('/api/outsider-assistant', async (req, res) => {
+  const { question, context } = req.body;
+  
+  if (!question) {
+    return res.status(400).json({ error: 'Question is required' });
+  }
+  
+  // Build system context for the assistant
+  const systemContext = {
+    config: {
+      apiEndpoint: config.apiEndpoint,
+      defaultModel: config.defaultModel,
+      port: config.port,
+      host: config.host,
+      dbPath: config.dbPath,
+      chaosSettings: config.chaosSettings,
+      toolSettings: config.toolSettings,
+      systemSettings: config.systemSettings
+    },
+    agentsCount: Object.keys(chatWorld.agents).length,
+    agentsStatus: Object.values(chatWorld.agents).map(a => ({
+      id: a.id,
+      name: a.name,
+      status: a.status,
+      emotionState: a.emotionState,
+      activityLevel: a.activityLevel
+    })),
+    recentLogs: chatWorld.internalLogs ? chatWorld.internalLogs.slice(-20) : [],
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage()
+  };
+  
+  // The outsider assistant's system prompt
+  const outsiderPrompt = `You are the "Outsider Assistant" (局外人助手), a specialized AI assistant for this chaotic chat world system. Your role is to:
+
+1. Answer questions about the system configuration and current state
+2. Help with fault diagnosis and troubleshooting
+3. Explain how the system works
+4. Provide recommendations for configuration adjustments
+
+Current System Context:
+${JSON.stringify(systemContext, null, 2)}
+
+Available Configuration Options:
+- API Endpoint: ${config.apiEndpoint}
+- Default Model: ${config.defaultModel}
+- Port: ${config.port}
+- Chaos Settings: ${JSON.stringify(config.chaosSettings)}
+- Tool Settings: ${JSON.stringify(config.toolSettings)}
+- Active Agents: ${Object.keys(chatWorld.agents).length}
+
+When answering:
+- Be clear and concise
+- Provide actionable advice for troubleshooting
+- Explain technical details in an accessible way
+- Suggest configuration changes when appropriate`;
+
+  try {
+    const llmClient = chatWorld.llmClient;
+    const response = await llmClient.generate({
+      model: config.defaultModel,
+      messages: [
+        { role: 'system', content: outsiderPrompt },
+        { role: 'user', content: question }
+      ],
+      temperature: 0.7
+    });
+    
+    res.json({ 
+      success: true, 
+      answer: response.content || response.message?.content || 'Unable to generate response',
+      context: systemContext
+    });
+  } catch (error) {
+    console.error('Outsider assistant error:', error);
+    // Fallback: provide basic info without LLM
+    res.json({
+      success: true,
+      answer: `I'm the Outsider Assistant. Currently, the system has:\n- ${Object.keys(chatWorld.agents).length} active agents\n- API Endpoint: ${config.apiEndpoint}\n- Model: ${config.defaultModel}\n- Uptime: ${process.uptime().toFixed(2)} seconds\n\nFor detailed troubleshooting, please ensure the API key is configured correctly.`,
+      context: systemContext,
+      note: 'LLM unavailable, providing basic info only'
+    });
+  }
+});
+
+// Get system health status
+app.get('/api/system-health', (req, res) => {
+  const health = {
+    status: 'healthy',
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+    agentsCount: Object.keys(chatWorld.agents).length,
+    agentsActive: Object.values(chatWorld.agents).filter(a => a.status !== 'inactive').length,
+    configValid: !!(config.apiKey || config.apiEndpoint.includes('localhost')),
+    lastLogs: chatWorld.internalLogs ? chatWorld.internalLogs.slice(-5) : []
+  };
+  
+  // Check for potential issues
+  const issues = [];
+  if (!config.apiKey && !config.apiEndpoint.includes('localhost')) {
+    issues.push('API key not configured');
+    health.status = 'warning';
+  }
+  if (health.agentsCount === 0) {
+    issues.push('No agents configured');
+    health.status = 'warning';
+  }
+  if (health.memoryUsage.heapUsed > 500 * 1024 * 1024) {
+    issues.push('High memory usage');
+    health.status = 'warning';
+  }
+  
+  health.issues = issues;
+  res.json(health);
+});
+
+// Reset system to defaults
+app.post('/api/system-reset', (req, res) => {
+  const { resetType } = req.body;
+  
+  try {
+    if (resetType === 'memories') {
+      chatWorld.resetMemories();
+      res.json({ success: true, message: 'All agent memories have been reset' });
+    } else if (resetType === 'config') {
+      // Reload config from file
+      const freshConfig = require('./config/agents.json');
+      config.chaosSettings = freshConfig.chaosSettings;
+      config.toolSettings = freshConfig.toolSettings;
+      config.agents = freshConfig.agents;
+      
+      // Update agents
+      Object.values(chatWorld.agents).forEach(agent => {
+        agent.chaosSettings = config.chaosSettings;
+      });
+      
+      res.json({ success: true, message: 'Configuration reset to defaults' });
+    } else if (resetType === 'all') {
+      chatWorld.resetMemories();
+      const freshConfig = require('./config/agents.json');
+      config.chaosSettings = freshConfig.chaosSettings;
+      config.toolSettings = freshConfig.toolSettings;
+      config.agents = freshConfig.agents;
+      
+      Object.values(chatWorld.agents).forEach(agent => {
+        agent.chaosSettings = config.chaosSettings;
+      });
+      
+      res.json({ success: true, message: 'Full system reset completed' });
+    } else {
+      res.status(400).json({ error: 'Invalid reset type. Use: memories, config, or all' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ==========================================
