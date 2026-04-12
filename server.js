@@ -21,6 +21,9 @@ const config = {
   agents: agentConfig.agents,
   chaosSettings: agentConfig.chaosSettings,
   toolSettings: agentConfig.toolSettings,
+  // Test mode settings
+  testMode: process.env.TEST_MODE === 'true',
+  testModePort: parseInt(process.env.TEST_MODE_PORT) || 3001,
   // System settings for web management
   systemSettings: {
     allowWebConfig: true,
@@ -40,6 +43,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize ChatWorld
 const chatWorld = new ChatWorld(config);
+
+// Start mock API server in test mode
+if (config.testMode) {
+  const MockAPIServer = require('./src/models/MockAPIServer');
+  const mockServer = new MockAPIServer(config.testModePort);
+  
+  mockServer.start().then(() => {
+    // Override config to use mock server
+    config.apiEndpoint = `http://localhost:${config.testModePort}`;
+    config.apiKey = 'test-key-12345';
+    console.log(`🧪 [Test Mode] Using mock API endpoint: ${config.apiEndpoint}`);
+    console.log(`🧪 [Test Mode] Test API Key: ${config.apiKey}`);
+    
+    // Reinitialize LLM client with mock endpoint
+    chatWorld.llmClient.endpoint = config.apiEndpoint;
+    chatWorld.llmClient.apiKey = config.apiKey;
+  });
+}
 
 // Setup WebSocket
 chatWorld.setupWebSocket(server);
@@ -354,7 +375,7 @@ app.post('/api/system-reset', (req, res) => {
 
 app.get('/api/history', (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
-  res.json({ messages: chatWorld.getRecentMessages(limit) });
+  res.json({ messages: chatWorld.db.getRecentMessages(limit) });
 });
 
 app.post('/api/message', async (req, res) => {
@@ -428,6 +449,7 @@ server.listen(config.port, config.host, () => {
 ║           🌍 AI Group Chat World Started!                ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Server:   http://${config.host}:${config.port}                      ║
+║  Mode:     ${config.testMode ? '🧪 TEST MODE (no API key needed)' : '🔗 Production Mode'}${config.testMode ? '                            ║' : ''}
 ║  Agents:   ${Object.keys(chatWorld.agents).length} active                       ║
 ║  Database: ${config.dbPath}           ║
 ╚══════════════════════════════════════════════════════════╝
@@ -449,3 +471,17 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+// Also handle mock server shutdown if in test mode
+if (config.testMode) {
+  const originalShutdown = process.listeners('SIGINT')[0];
+  process.removeAllListeners('SIGINT');
+  process.on('SIGINT', () => {
+    console.log('\nShutting down...');
+    chatWorld.shutdown();
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
+}

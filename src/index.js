@@ -3,10 +3,20 @@ const Agent = require('./agents/Agent');
 const ChatDatabase = require('./models/database');
 const LLMClient = require('./models/llmClient');
 const { GroupStateTool } = require('./tools');
+const path = require('path');
+const fs = require('fs');
 
 class ChatWorld {
   constructor(config) {
     this.config = config || {};
+    
+    // Ensure data directory exists
+    const dataDir = path.dirname(this.config.dbPath || './data/chat.db');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+      console.log(`[World] Created data directory: ${dataDir}`);
+    }
+    
     this.db = new ChatDatabase(this.config.dbPath);
     
     this.llmClient = new LLMClient({
@@ -18,6 +28,9 @@ class ChatWorld {
     this.agents = {};
     this.wsClients = new Set();
     this.groupStateTool = null;
+    
+    // Initialize internal logs array
+    this.internalLogs = [];
     
     // World settings
     this.worldSettings = {
