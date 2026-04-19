@@ -7,9 +7,10 @@ class AIService {
     this.model = model || 'gpt-4o-mini';
     
     if (apiKey && apiKey !== 'your_api_key_here') {
+      const baseURL = baseUrl && baseUrl.trim() !== '' ? baseUrl : 'https://api.openai.com/v1';
       this.client = new OpenAI({
         apiKey: apiKey,
-        baseURL: baseUrl || 'https://api.openai.com/v1'
+        baseURL: baseURL
       });
     } else {
       this.client = null;
@@ -22,9 +23,10 @@ class AIService {
     this.model = model || 'gpt-4o-mini';
     
     if (apiKey && apiKey !== 'your_api_key_here') {
+      const baseURL = baseUrl && baseUrl.trim() !== '' ? baseUrl : 'https://api.openai.com/v1';
       this.client = new OpenAI({
         apiKey: apiKey,
-        baseURL: baseUrl || 'https://api.openai.com/v1'
+        baseURL: baseURL
       });
     } else {
       this.client = null;
