@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Email - 邮件交互</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📧 Fake Email</h1>
+      <p>你与这个濒临崩溃世界的唯一联系</p>
+    </header>
+
+    <main>
+      <div class="email-layout">
+        <section class="email-list-section">
+          <h2>收件箱</h2>
+          <div id="emailList" class="email-list">
+            <div class="loading">正在加载邮件...</div>
+          </div>
+        </section>
+
+        <section class="email-view-section">
+          <div id="emailView" class="email-view">
+            <div class="empty-state">
+              <p>选择一封邮件阅读</p>
+            </div>
+          </div>
+
+          <div id="replySection" class="reply-section" style="display: none;">
+            <h3>撰写回复</h3>
+            <form id="replyForm">
+              <div class="form-group">
+                <label for="replySubject">主题</label>
+                <input type="text" id="replySubject" name="subject" required>
+              </div>
+              <div class="form-group">
+                <label for="replyBody">内容 *</label>
+                <textarea id="replyBody" name="body" rows="8" required placeholder="在这里写下你的回复..."></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">发送</button>
+                <button type="button" id="cancelReply" class="btn btn-secondary">取消</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <div id="message" class="message"></div>
+    </main>
+
+    <footer>
+      <a href="/">← 返回首页</a>
+      <span class="network-status" id="networkStatus">网络状态：检测中...</span>
+    </footer>
+  </div>
+
+  <script src="/js/email.js"></script>
+</body>
+</html>
