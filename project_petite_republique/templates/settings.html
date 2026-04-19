@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - Project Petite République</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.8em; }
+        .back-link { color: #00ff00; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .settings-section {
+            background: #111;
+            border: 1px solid #333;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #888; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 1em;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00ff00;
+        }
+        
+        .help-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .save-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1em;
+        }
+        .save-btn:hover { background: #00cc00; }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 3px;
+            display: none;
+        }
+        .status-message.success { background: #003300; border: 1px solid #00ff00; display: block; }
+        .status-message.error { background: #330000; border: 1px solid #ff0000; display: block; }
+        
+        .info-box {
+            background: #1a1a2e;
+            border: 1px solid #4444aa;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ 系统设置</h1>
+            <a href="/" class="back-link">← 返回主页</a>
+        </header>
+
+        <div class="info-box">
+            <strong>ℹ️ 提示：</strong>修改设置后需要重启服务器才能生效。大部分设置也支持环境变量配置。
+        </div>
+
+        <form id="settingsForm">
+            <div class="settings-section">
+                <h2>🤖 AI 模型配置</h2>
+                
+                <div class="form-group">
+                    <label for="api_key">OpenAI API Key</label>
+                    <input type="password" id="api_key" name="api_key" placeholder="sk-..." value="">
+                    <div class="help-text">留空则使用环境变量 OPENAI_API_KEY</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="base_url">API 基础 URL</label>
+                    <input type="text" id="base_url" name="base_url" placeholder="https://api.openai.com/v1" value="">
+                    <div class="help-text">支持兼容 OpenAI API 的端点，如本地部署的 vLLM、Ollama 等</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="model">AI 模型</label>
+                    <select id="model" name="model">
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="claude-3-opus">Claude 3 Opus (通过 OpenRouter)</option>
+                        <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                        <option value="llama-3-70b">Llama 3 70B</option>
+                        <option value="qwen-max">Qwen Max</option>
+                    </select>
+                    <div class="help-text">选择用于角色扮演的 AI 模型</div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>💾 OpenSearch 配置</h2>
+                
+                <div class="form-group">
+                    <label for="opensearch_host">OpenSearch 主机</label>
+                    <input type="text" id="opensearch_host" name="opensearch_host" placeholder="localhost" value="">
+                    <div class="help-text">OpenSearch 服务器地址</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="opensearch_port">OpenSearch 端口</label>
+                    <input type="number" id="opensearch_port" name="opensearch_port" placeholder="9200" value="">
+                    <div class="help-text">默认端口：9200</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mock_mode">运行模式</label>
+                    <select id="mock_mode" name="mock_mode">
+                        <option value="true">模拟模式（无需 OpenSearch）</option>
+                        <option value="false">生产模式（连接 OpenSearch）</option>
+                    </select>
+                    <div class="help-text">模拟模式下数据存储在内存中，重启后丢失</div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>🎮 游戏参数</h2>
+                
+                <div class="form-group">
+                    <label for="event_frequency">随机事件频率（分钟）</label>
+                    <input type="number" id="event_frequency" name="event_frequency" placeholder="10" min="1" max="60" value="">
+                    <div class="help-text">每隔多少分钟自动生成一个随机事件</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="auto_discussion">自动内部讨论</label>
+                    <select id="auto_discussion" name="auto_discussion">
+                        <option value="false">关闭</option>
+                        <option value="true">开启（每天自动触发）</option>
+                    </select>
+                    <div class="help-text">AI 角色会自动进行内部讨论，玩家可选择性查看</div>
+                </div>
+            </div>
+
+            <button type="submit" class="save-btn">💾 保存设置</button>
+            <div id="statusMessage" class="status-message"></div>
+        </form>
+    </div>
+
+    <script>
+        const settingsForm = document.getElementById('settingsForm');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // 加载当前设置
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/system/monitor');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 根据监控信息填充部分字段
+                    console.log('Current system status:', data.monitor);
+                }
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+        }
+
+        // 保存设置
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                api_key: document.getElementById('api_key').value,
+                base_url: document.getElementById('base_url').value,
+                model: document.getElementById('model').value,
+                opensearch_host: document.getElementById('opensearch_host').value,
+                opensearch_port: document.getElementById('opensearch_port').value,
+                mock_mode: document.getElementById('mock_mode').value,
+                event_frequency: document.getElementById('event_frequency').value,
+                auto_discussion: document.getElementById('auto_discussion').value
+            };
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ 设置已保存！请重启服务器以应用更改。', 'success');
+                } else {
+                    showStatus(`❌ 保存失败：${data.error}`, 'error');
+                }
+            } catch (e) {
+                showStatus(`❌ 保存失败：${e.message}`, 'error');
+            }
+        });
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        loadSettings();
+    </script>
+</body>
+</html>

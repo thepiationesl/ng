@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件日志 - Project Petite République</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.8em; }
+        .back-link { color: #00ff00; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        button:hover { background: #00cc00; }
+        
+        .event-list { list-style: none; }
+        .event-item {
+            padding: 20px;
+            margin: 15px 0;
+            background: #111;
+            border: 1px solid #333;
+            border-left: 4px solid #00ff00;
+        }
+        .event-item.severity-critical { border-left-color: #ff0000; }
+        .event-item.severity-high { border-left-color: #ff6600; }
+        .event-item.severity-medium { border-left-color: #ffff00; }
+        .event-item.severity-low { border-left-color: #00ff00; }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .event-title { font-weight: bold; font-size: 1.1em; }
+        .event-meta { color: #666; font-size: 0.9em; }
+        .event-content { margin: 10px 0; color: #888; }
+        .event-outcome { 
+            padding: 10px; 
+            background: #0a0a0a; 
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        .loading { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📰 事件日志</h1>
+            <a href="/" class="back-link">← 返回主页</a>
+        </header>
+
+        <div class="controls">
+            <button onclick="loadEvents()">🔄 刷新</button>
+            <button onclick="generateRandomEvent()">🎲 生成随机事件</button>
+        </div>
+
+        <ul id="eventList" class="event-list">
+            <li class="loading">加载中...</li>
+        </ul>
+    </div>
+
+    <script>
+        async function loadEvents() {
+            const eventList = document.getElementById('eventList');
+            eventList.innerHTML = '<li class="loading">加载中...</li>';
+            
+            try {
+                const response = await fetch('/api/events?limit=50');
+                const data = await response.json();
+                
+                if (data.success && data.events.length > 0) {
+                    eventList.innerHTML = data.events.map(event => `
+                        <li class="event-item severity-${event.severity}">
+                            <div class="event-header">
+                                <span class="event-title">${escapeHtml(event.title)}</span>
+                                <span class="event-meta">
+                                    ${new Date(event.timestamp).toLocaleString()} | 
+                                    类型：${event.event_type} | 
+                                    发起人：${event.initiator}
+                                </span>
+                            </div>
+                            <div class="event-content">${escapeHtml(event.content)}</div>
+                            ${event.outcome ? `<div class="event-outcome"><strong>结果：</strong>${escapeHtml(event.outcome)}</div>` : ''}
+                        </li>
+                    `).join('');
+                } else {
+                    eventList.innerHTML = '<li class="loading">暂无事件记录</li>';
+                }
+            } catch (e) {
+                eventList.innerHTML = `<li class="loading">加载失败：${e.message}</li>`;
+            }
+        }
+
+        async function generateRandomEvent() {
+            try {
+                const response = await fetch('/api/events/random', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`新事件已生成：${data.event.title}`);
+                    loadEvents();
+                } else {
+                    alert(`生成失败：${data.error}`);
+                }
+            } catch (e) {
+                alert(`生成失败：${e.message}`);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadEvents();
+    </script>
+</body>
+</html>

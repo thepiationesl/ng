@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘 - Project Petite République</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.8em; }
+        .back-link { color: #00ff00; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: #111;
+            border: 1px solid #333;
+            padding: 20px;
+        }
+        .card h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+        }
+        .stat-label { color: #888; }
+        .stat-value { font-weight: bold; }
+        .stat-value.good { color: #00ff00; }
+        .stat-value.warning { color: #ffff00; }
+        .stat-value.bad { color: #ff0000; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #222;
+            margin: 5px 0;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s;
+        }
+        
+        .device-list { list-style: none; }
+        .device-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #0a0a0a;
+            border: 1px solid #333;
+        }
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .device-status {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        .device-status.online { background: #00ff00; color: #000; }
+        .device-status.degraded { background: #ffff00; color: #000; }
+        .device-status.offline { background: #ff0000; color: #fff; }
+        
+        .issues-list {
+            list-style: none;
+            margin-top: 10px;
+            padding-left: 10px;
+            border-left: 2px solid #ff0000;
+        }
+        .issues-list li {
+            color: #ff6666;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        
+        .refresh-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .refresh-btn:hover { background: #00cc00; }
+        
+        .loading { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 国家仪表盘</h1>
+            <div>
+                <button class="refresh-btn" onclick="loadDashboard()">🔄 刷新</button>
+                <a href="/" class="back-link" style="margin-left: 15px;">← 返回主页</a>
+            </div>
+        </header>
+
+        <div id="dashboard" class="dashboard-grid">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '<div class="loading">加载中...</div>';
+            
+            try {
+                const [statusRes, devicesRes] = await Promise.all([
+                    fetch('/api/status'),
+                    fetch('/api/devices')
+                ]);
+                
+                const statusData = await statusRes.json();
+                const devicesData = await devicesRes.json();
+                
+                if (!statusData.success || !devicesData.success) {
+                    throw new Error('Failed to load data');
+                }
+                
+                renderDashboard(statusData, devicesData);
+            } catch (e) {
+                dashboard.innerHTML = `<div class="loading">加载失败：${e.message}</div>`;
+            }
+        }
+        
+        function renderDashboard(statusData, devicesData) {
+            const dashboard = document.getElementById('dashboard');
+            const state = statusData.state;
+            const profile = statusData.profile;
+            const devices = devicesData.devices;
+            
+            // 计算状态颜色
+            function getStatusClass(value) {
+                if (value >= 70) return 'good';
+                if (value >= 40) return 'warning';
+                return 'bad';
+            }
+            
+            function getProgressBar(value) {
+                const color = value >= 70 ? '#00ff00' : value >= 40 ? '#ffff00' : '#ff0000';
+                return `<div class="progress-bar"><div class="progress-fill" style="width: ${value}%; background: ${color};"></div></div>`;
+            }
+            
+            dashboard.innerHTML = `
+                <div class="card">
+                    <h2>🏛️ 国家概况</h2>
+                    <div class="stat-row">
+                        <span class="stat-label">国名</span>
+                        <span class="stat-value">${profile.country_name || '未知'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">人口</span>
+                        <span class="stat-value">${(profile.population || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">国土面积</span>
+                        <span class="stat-value">${(profile.area_km2 || 0).toLocaleString()} km²</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">科技水平</span>
+                        <span class="stat-value">${profile.technology_level || '未知'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">国际带宽</span>
+                        <span class="stat-value ${getStatusClass(profile.international_bandwidth_kbps)}">${profile.international_bandwidth_kbps || 64} kbps</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">国家格言</span>
+                        <span class="stat-value">${profile.national_motto || '-'}</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>📈 经济指标</h2>
+                    <div class="stat-row">
+                        <span class="stat-label">经济健康度</span>
+                        <span class="stat-value ${getStatusClass(state.economy_health)}">${(state.economy_health || 0).toFixed(1)}/100</span>
+                    </div>
+                    ${getProgressBar(state.economy_health || 0)}
+                    
+                    <div class="stat-row" style="margin-top: 15px;">
+                        <span class="stat-label">外汇储备</span>
+                        <span class="stat-value">$${(state.foreign_currency_usd || 0).toLocaleString()}</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">粮食储备</span>
+                        <span class="stat-value">${(state.food_stock_tons || 0).toFixed(0)} 吨</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">失业率</span>
+                        <span class="stat-value ${getStatusClass(100 - (state.unemployment_rate || 0))}">${(state.unemployment_rate || 0).toFixed(1)}%</span>
+                    </div>
+                    
+                    <div class="stat-row">
+                        <span class="stat-label">发电量</span>
+                        <span class="stat-value">${(state.electricity_generation_mw || 0).toFixed(1)} MW</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>😊 社会状况</h2>
+                    <div class="stat-row">
+                        <span class="stat-label">民众满意度</span>
+                        <span class="stat-value ${getStatusClass(state.public_satisfaction)}">${(state.public_satisfaction || 0).toFixed(1)}/100</span>
+                    </div>
+                    ${getProgressBar(state.public_satisfaction || 0)}
+                    
+                    <div class="stat-row" style="margin-top: 15px;">
+                        <span class="stat-label">政治稳定性</span>
+                        <span class="stat-value ${getStatusClass(profile.political_stability)}">${(profile.political_stability || 0).toFixed(1)}/100</span>
+                    </div>
+                    ${getProgressBar(profile.political_stability || 0)}
+                    
+                    <div class="stat-row" style="margin-top: 15px;">
+                        <span class="stat-label">军事战备</span>
+                        <span class="stat-value ${getStatusClass(profile.military_readiness)}">${(profile.military_readiness || 0).toFixed(1)}/100</span>
+                    </div>
+                    ${getProgressBar(profile.military_readiness || 0)}
+                </div>
+                
+                <div class="card" style="grid-column: span ${devices.length > 1 ? '2' : '1'};">
+                    <h2>🖥️ 设备监控 (NEZHA 探针风格)</h2>
+                    <ul class="device-list">
+                        ${devices.map(device => `
+                            <li class="device-item">
+                                <div class="device-header">
+                                    <strong>${device.device_name}</strong>
+                                    <span class="device-status ${device.status}">${device.status === 'online' ? '在线' : device.status === 'degraded' ? '降级' : '离线'}</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">类型</span>
+                                    <span class="stat-value">${device.device_type} (${device.os_version})</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">CPU 使用率</span>
+                                    <span class="stat-value">${device.cpu_usage.toFixed(1)}%</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">内存使用率</span>
+                                    <span class="stat-value">${device.memory_usage.toFixed(1)}%</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">网络延迟</span>
+                                    <span class="stat-value ${device.network_latency_ms > 1000 ? 'bad' : 'good'}">${device.network_latency_ms} ms</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">带宽</span>
+                                    <span class="stat-value">${device.bandwidth_kbps} kbps</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">运行时间</span>
+                                    <span class="stat-value">${device.uptime_hours.toFixed(1)} 小时</span>
+                                </div>
+                                ${device.issues && device.issues.length > 0 ? `
+                                    <ul class="issues-list">
+                                        ${device.issues.map(issue => `<li>⚠️ ${issue}</li>`).join('')}
+                                    </ul>
+                                ` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // 初始加载
+        loadDashboard();
+        
+        // 自动刷新
+        setInterval(loadDashboard, 30000); // 每 30 秒刷新
+    </script>
+</body>
+</html>

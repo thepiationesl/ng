@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色管理 - Project Petite République</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.8em; }
+        .back-link { color: #00ff00; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        button:hover { background: #00cc00; }
+        
+        .characters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .character-card {
+            background: #111;
+            border: 1px solid #333;
+            padding: 20px;
+        }
+        .character-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .character-name { font-size: 1.3em; font-weight: bold; }
+        .character-position { color: #888; font-size: 0.9em; }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+        }
+        .stat-label { color: #666; }
+        
+        .character-backstory {
+            margin-top: 15px;
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .discussion-panel {
+            margin-top: 30px;
+            padding: 20px;
+            background: #111;
+            border: 1px solid #333;
+        }
+        
+        .discussion-log {
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .discussion-entry {
+            padding: 15px;
+            margin: 10px 0;
+            background: #0a0a0a;
+            border-left: 3px solid #00ff00;
+        }
+        
+        .loading { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👥 角色管理</h1>
+            <a href="/" class="back-link">← 返回主页</a>
+        </header>
+
+        <div class="controls">
+            <button onclick="loadCharacters()">🔄 刷新</button>
+            <button onclick="generateCharacter()">➕ 生成新角色</button>
+            <button onclick="showDiscussionPanel()">💬 触发内部讨论</button>
+        </div>
+
+        <div id="charactersGrid" class="characters-grid">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <div id="discussionPanel" class="discussion-panel" style="display: none;">
+            <h2>💬 AI 内部讨论</h2>
+            <div style="margin-top: 15px;">
+                <input type="text" id="discussionTopic" placeholder="讨论主题..." style="width: 70%; padding: 10px; background: #0a0a0a; border: 1px solid #333; color: #00ff00;">
+                <button onclick="startDiscussion()">开始讨论</button>
+            </div>
+            <div id="discussionLog" class="discussion-log"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadCharacters() {
+            const grid = document.getElementById('charactersGrid');
+            grid.innerHTML = '<div class="loading">加载中...</div>';
+            
+            try {
+                const response = await fetch('/api/characters');
+                const data = await response.json();
+                
+                if (data.success && data.characters.length > 0) {
+                    grid.innerHTML = data.characters.map(char => `
+                        <div class="character-card">
+                            <div class="character-header">
+                                <div>
+                                    <div class="character-name">${escapeHtml(char.name)}</div>
+                                    <div class="character-position">${escapeHtml(char.position)}</div>
+                                </div>
+                                <span style="color: ${char.is_active ? '#00ff00' : '#666'}">
+                                    ${char.is_active ? '活跃' : '离线'}
+                                </span>
+                            </div>
+                            
+                            <div class="stat-row">
+                                <span class="stat-label">性格</span>
+                                <span>${escapeHtml(char.personality)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">忠诚度</span>
+                                <span>${char.loyalty_to_leader.toFixed(0)}/100</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">当前心情</span>
+                                <span>${escapeHtml(char.current_mood)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">决策风格</span>
+                                <span>${escapeHtml(char.decision_style)}</span>
+                            </div>
+                            
+                            <div class="character-backstory">
+                                <strong>背景故事：</strong><br>
+                                ${escapeHtml(char.backstory)}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div class="loading">暂无角色</div>';
+                }
+            } catch (e) {
+                grid.innerHTML = `<div class="loading">加载失败：${e.message}</div>`;
+            }
+        }
+
+        async function generateCharacter() {
+            try {
+                const response = await fetch('/api/characters/generate', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`新角色已生成：${data.character.name} 担任 ${data.character.position}`);
+                    loadCharacters();
+                } else {
+                    alert(`生成失败：${data.error}`);
+                }
+            } catch (e) {
+                alert(`生成失败：${e.message}`);
+            }
+        }
+
+        function showDiscussionPanel() {
+            document.getElementById('discussionPanel').style.display = 'block';
+        }
+
+        async function startDiscussion() {
+            const topic = document.getElementById('discussionTopic').value || '国家发展';
+            const log = document.getElementById('discussionLog');
+            log.innerHTML = '<div class="loading">讨论进行中...</div>';
+            
+            try {
+                const response = await fetch('/api/internal/discuss', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, rounds: 2 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.discussion.length > 0) {
+                    log.innerHTML = data.discussion.map(entry => `
+                        <div class="discussion-entry">
+                            <strong>${escapeHtml(entry.character_name)} (${escapeHtml(entry.position)})</strong>
+                            <div style="font-size: 0.8em; color: #666; margin-bottom: 10px;">
+                                第${entry.round}轮 | ${new Date(entry.timestamp).toLocaleString()}
+                            </div>
+                            <div>${escapeHtml(entry.content)}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    log.innerHTML = '<div class="loading">讨论失败或无内容</div>';
+                }
+            } catch (e) {
+                log.innerHTML = `<div class="loading">讨论失败：${e.message}</div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadCharacters();
+    </script>
+</body>
+</html>
