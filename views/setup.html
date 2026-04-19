@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup - 初始配置</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ Setup - 初始配置</h1>
+      <p>配置 AI 服务并生成随机世界</p>
+    </header>
+
+    <main>
+      <section class="form-section">
+        <h2>OpenAI API 配置</h2>
+        <form id="setupForm">
+          <div class="form-group">
+            <label for="apiKey">API Key *</label>
+            <input type="text" id="apiKey" name="api_key" required placeholder="sk-...">
+          </div>
+
+          <div class="form-group">
+            <label for="baseUrl">API Base URL</label>
+            <input type="text" id="baseUrl" name="base_url" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+          </div>
+
+          <div class="form-group">
+            <label for="model">模型选择</label>
+            <select id="model" name="model">
+              <option value="gpt-4o-mini">GPT-4o Mini (推荐)</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="styleWeight">风格权重：<span id="styleWeightValue">0.5</span></label>
+            <input type="range" id="styleWeight" name="style_weight" min="0" max="1" step="0.1" value="0.5">
+            <small>控制 FallenJS 风格的强度（边缘、破碎、地下感）</small>
+          </div>
+
+          <div class="form-group">
+            <label for="randomSeed">随机种子（可选）</label>
+            <input type="text" id="randomSeed" name="random_seed" placeholder="留空则随机生成">
+          </div>
+
+          <button type="submit" class="btn btn-primary">保存配置</button>
+        </form>
+      </section>
+
+      <section class="action-section" id="initSection" style="display: none;">
+        <h2>世界初始化</h2>
+        <p>配置已保存，现在可以生成随机世界了。</p>
+        <button id="initWorldBtn" class="btn btn-success">🌍 生成世界</button>
+      </section>
+
+      <section class="status-section" id="statusSection">
+        <h2>当前状态</h2>
+        <div id="statusContent">加载中...</div>
+      </section>
+
+      <div id="message" class="message"></div>
+    </main>
+
+    <footer>
+      <a href="/">← 返回首页</a>
+    </footer>
+  </div>
+
+  <script src="/js/setup.js"></script>
+</body>
+</html>
